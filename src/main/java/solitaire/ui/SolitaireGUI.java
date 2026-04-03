@@ -1,16 +1,20 @@
 package solitaire.ui;
 
-import solitaire.logic.GameManager;
+import solitaire.logic.AutoGame;
+import solitaire.logic.ManualGame;
+import solitaire.logic.Game;
 import solitaire.logic.Move;
 import solitaire.model.Board;
+import solitaire.model.BoardType;
 import solitaire.model.CellState;
+
 
 import javax.swing.*;
 import java.awt.*;
 
 public class SolitaireGUI extends JFrame {
 
-    private GameManager gameManager;
+    private Game game;
     private JButton[][] buttons;
 
     private int selectedRow = -1;
@@ -21,9 +25,11 @@ public class SolitaireGUI extends JFrame {
     private JRadioButton diamondButton;
     private JRadioButton hexagonButton;
     private JButton newGameButton;
+    private JRadioButton manualButton;
+    private JRadioButton autoButton;
+    private JPanel boardPanel;
 
     public SolitaireGUI() {
-        gameManager = new GameManager();
 
         setTitle("Peg Solitaire");
         setSize(700, 700);
@@ -32,6 +38,7 @@ public class SolitaireGUI extends JFrame {
         setLayout(new BorderLayout());
 
         add(createTopPanel(), BorderLayout.NORTH);
+        game = createSelectedGame();
         add(createBoardPanel(), BorderLayout.CENTER);
         add(createBottomPanel(), BorderLayout.SOUTH);
 
@@ -43,19 +50,31 @@ public class SolitaireGUI extends JFrame {
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel();
 
+        //Game Mode
+        topPanel.add(new JLabel("Mode:"));
+
+        manualButton = new JRadioButton("Manual", true);
+        autoButton = new JRadioButton("Automated");
+        ButtonGroup modeGroup = new ButtonGroup();
+
+        modeGroup.add(manualButton);
+        modeGroup.add(autoButton);
+
+        topPanel.add(manualButton);
+        topPanel.add(autoButton);
+
+        //Board Size
         topPanel.add(new JLabel("Board Size:"));
 
-        sizeComboBox = new JComboBox<>(new String[]{"7"}); //for now only 7
+        sizeComboBox = new JComboBox<>(new String[]{"5", "7", "9"});
         topPanel.add(sizeComboBox);
 
+        //Board Type
         topPanel.add(new JLabel("Board Type:"));
 
         englishButton = new JRadioButton("English", true);
         diamondButton = new JRadioButton("Diamond"); //unselectable
         hexagonButton = new JRadioButton("Hexagon"); //unselectable
-
-        diamondButton.setEnabled(false);
-        hexagonButton.setEnabled(false);
 
         ButtonGroup group = new ButtonGroup();
         group.add(englishButton);
@@ -69,11 +88,33 @@ public class SolitaireGUI extends JFrame {
         return topPanel;
     }
 
+    private int getSelectedSize() {
+        return Integer.parseInt((String) sizeComboBox.getSelectedItem());
+    }
+
+    private BoardType getSelectedBoardType() {
+        if (englishButton.isSelected()) return BoardType.ENGLISH;
+        else if (diamondButton.isSelected()) return BoardType.DIAMOND;
+        else if (hexagonButton.isSelected()) return BoardType.HEXAGON;
+        return null;
+    }
+
+    private Game createSelectedGame() {
+        int size = getSelectedSize();
+        BoardType type = getSelectedBoardType();
+
+        if (manualButton.isSelected()) {
+            return new ManualGame(size, type);
+        } else {
+            return new AutoGame(size, type);
+        }
+    }
+
     private JPanel createBoardPanel() {
-        Board board = gameManager.getBoard();
+        Board board = game.getBoard();
         int size = board.getSize();
 
-        JPanel boardPanel = new JPanel(new GridLayout(size, size));
+        boardPanel = new JPanel(new GridLayout(size, size));
         buttons = new JButton[size][size];
 
         for (int r = 0; r < size; r++) {
@@ -98,9 +139,19 @@ public class SolitaireGUI extends JFrame {
 
         newGameButton = new JButton("New Game");
         newGameButton.addActionListener(e -> {
-            gameManager.newGame();
+
+            game = createSelectedGame();
+
             selectedRow = -1;
             selectedCol = -1;
+
+            // Rebuild
+            remove(boardPanel);
+            add(createBoardPanel(), BorderLayout.CENTER);
+
+            revalidate();
+            repaint();
+
             refreshBoard();
         });
 
@@ -111,7 +162,7 @@ public class SolitaireGUI extends JFrame {
 
     private void handleClick(int row, int col) {
 
-        Board board = gameManager.getBoard();
+        Board board = game.getBoard();
         CellState clickedCell = board.getCell(row, col);
 
         // First click: only allow selecting a peg
@@ -134,15 +185,15 @@ public class SolitaireGUI extends JFrame {
 
         Move move = new Move(selectedRow, selectedCol, row, col);
 
-        if (gameManager.makeMove(move)) {
+        if (game.makeMove(move)) {
             // valid move
             selectedRow = -1;
             selectedCol = -1;
             refreshBoard();
 
-            if (gameManager.isGameOver()) {
+            if (game.isGameOver()) {
 
-                if (gameManager.isWin()) {
+                if (game.isWin()) {
                     JOptionPane.showMessageDialog(this, "WINNER WINNER CHICKEN DINNER!");
                 } else {
                     JOptionPane.showMessageDialog(this, "Game Over!");
@@ -158,7 +209,7 @@ public class SolitaireGUI extends JFrame {
     }
 
     private void refreshBoard() {
-        Board board = gameManager.getBoard();
+        Board board = game.getBoard();
         int size = board.getSize();
 
         for (int r = 0; r < size; r++) {
@@ -167,7 +218,10 @@ public class SolitaireGUI extends JFrame {
                 JButton button = buttons[r][c];
 
                 if (state == CellState.INVALID) {
-                    button.setVisible(false);
+                    button.setVisible(true);
+                    button.setEnabled(false);
+                    button.setBackground(Color.LIGHT_GRAY);
+                    button.setText("");
                 } else {
                     button.setVisible(true);
                     button.setEnabled(true);

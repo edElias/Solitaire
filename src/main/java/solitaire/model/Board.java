@@ -19,7 +19,6 @@ public class Board {
             initializeEnglish();
         }
 
-        // placeholders for later
         else if(this.type == BoardType.DIAMOND) {
             initializeDiamond();
         }
@@ -51,7 +50,21 @@ public class Board {
     }
 
     private void initializeDiamond() {
-        // done later
+
+        int mid = size / 2;
+
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+
+                if (Math.abs(r - mid) + Math.abs(c - mid) <= mid) {
+                    grid[r][c] = CellState.PEG;
+                } else {
+                    grid[r][c] = CellState.INVALID;
+                }
+            }
+        }
+
+        grid[mid][mid] = CellState.EMPTY;
     }
 
     private void initializeHexagon() {

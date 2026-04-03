@@ -4,13 +4,13 @@ import solitaire.model.Board;
 import solitaire.model.BoardType;
 import solitaire.model.CellState;
 
-public class GameManager {
+public abstract class Game {
 
     private Board board;
     private int[] center;
 
-    public GameManager() {
-        board = new Board(7, BoardType.ENGLISH);
+    public Game(int size, BoardType type) {
+        board = new Board(size, type);
         int mid = board.getSize() / 2;
         center = new int []{mid, mid};
     }
@@ -19,8 +19,8 @@ public class GameManager {
         return board;
     }
 
-    public void newGame() {
-        board = new Board(7, BoardType.ENGLISH);
+    public void newGame(int size, BoardType type) {
+        board = new Board(size, type);
         int mid = board.getSize() / 2;
         center = new int[]{mid, mid};
     }
@@ -126,4 +126,5 @@ public class GameManager {
         return true;
     }
     public int[] getCenter (){return this.center;}
+    public abstract void playTurn();
 }
