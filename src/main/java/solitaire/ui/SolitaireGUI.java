@@ -10,6 +10,7 @@ import solitaire.model.CellState;
 
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 
 public class SolitaireGUI extends JFrame {
@@ -66,7 +67,7 @@ public class SolitaireGUI extends JFrame {
         //Board Size
         topPanel.add(new JLabel("Board Size:"));
 
-        sizeComboBox = new JComboBox<>(new String[]{"5", "7", "9"});
+        sizeComboBox = new JComboBox<>(new String[]{"7", "9", "11"});
         topPanel.add(sizeComboBox);
 
         //Board Type
@@ -84,6 +85,9 @@ public class SolitaireGUI extends JFrame {
         topPanel.add(englishButton);
         topPanel.add(diamondButton);
         topPanel.add(hexagonButton);
+
+        manualButton.addActionListener(e -> resetGame());
+        autoButton.addActionListener(e -> resetGame());
 
         return topPanel;
     }
@@ -137,31 +141,70 @@ public class SolitaireGUI extends JFrame {
     private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel();
 
-        newGameButton = new JButton("New Game");
-        newGameButton.addActionListener(e -> {
+        newGameButton = new JButton("Reset");
+        newGameButton.addActionListener(e -> resetGame());
 
-            game = createSelectedGame();
+        JButton playTurnButton = new JButton("Play Turn");
+        JButton playAllButton = new JButton("Play All");
 
-            selectedRow = -1;
-            selectedCol = -1;
+        // Disable both buttons if in manual mode by default
+        boolean isAuto = autoButton.isSelected();
+        playTurnButton.setEnabled(isAuto);
+        playAllButton.setEnabled(isAuto);
 
-            // Rebuild
-            remove(boardPanel);
-            add(createBoardPanel(), BorderLayout.CENTER);
+        // Also toggle when mode is switched
+        manualButton.addActionListener(e -> {
+            playTurnButton.setEnabled(false);
+            playAllButton.setEnabled(false);
+        });
+        autoButton.addActionListener(e -> {
+            playTurnButton.setEnabled(true);
+            playAllButton.setEnabled(true);
+        });
 
-            revalidate();
-            repaint();
+        playTurnButton.addActionListener(e -> {
+            if (autoButton.isSelected()) {
+                game.playTurn();
+                refreshBoard();
+                if (game.isGameOver()) {
+                    handleGameOver();
+                }
+            }
+        });
 
+        playAllButton.addActionListener(e -> {
+            playTurnButton.setEnabled(false); // disable play turn while running
+            Timer timer = new Timer(500, null);
+            timer.addActionListener(tick -> {
+                if (game.isGameOver()) {
+                    timer.stop();
+                    playTurnButton.setEnabled(true); // re-enable after done
+                    handleGameOver();
+                    return;
+                }
+                game.playTurn();
+                refreshBoard();
+            });
+            timer.start();
+        });
+
+        JButton randomizeButton = new JButton("Randomize");
+        randomizeButton.addActionListener(e -> {
+            game.randomizeBoard();
             refreshBoard();
         });
 
         bottomPanel.add(newGameButton);
+        bottomPanel.add(playTurnButton);
+        bottomPanel.add(playAllButton);
+        bottomPanel.add(randomizeButton);
 
         return bottomPanel;
     }
 
     private void handleClick(int row, int col) {
 
+        if (autoButton.isSelected()) return;
         Board board = game.getBoard();
         CellState clickedCell = board.getCell(row, col);
 
@@ -192,13 +235,7 @@ public class SolitaireGUI extends JFrame {
             refreshBoard();
 
             if (game.isGameOver()) {
-
-                if (game.isWin()) {
-                    JOptionPane.showMessageDialog(this, "WINNER WINNER CHICKEN DINNER!");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Game Over!");
-                }
-
+                handleGameOver();
             }
         } else {
             // invalid move: cancel selection
@@ -206,6 +243,27 @@ public class SolitaireGUI extends JFrame {
             selectedCol = -1;
             refreshBoard();
         }
+    }
+
+    private void handleGameOver() {
+        if (game.isWin()) {
+            JOptionPane.showMessageDialog(this, "WINNER WINNER CHICKEN DINNER!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Game Over!");
+        }
+
+        resetGame();
+    }
+
+    private void resetGame() {
+        game = createSelectedGame();
+        selectedRow = -1;
+        selectedCol = -1;
+        remove(boardPanel);
+        add(createBoardPanel(), BorderLayout.CENTER);
+        revalidate();
+        repaint();
+        refreshBoard();
     }
 
     private void refreshBoard() {
@@ -246,3 +304,5 @@ public class SolitaireGUI extends JFrame {
         }
     }
 }
+
+//

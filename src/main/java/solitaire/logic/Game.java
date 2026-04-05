@@ -4,25 +4,30 @@ import solitaire.model.Board;
 import solitaire.model.BoardType;
 import solitaire.model.CellState;
 
+import java.util.Random;
+
 public abstract class Game {
 
     private Board board;
-    private int[] center;
 
     public Game(int size, BoardType type) {
-        board = new Board(size, type);
-        int mid = board.getSize() / 2;
-        center = new int []{mid, mid};
+        initGame(size, type);
     }
 
     public Board getBoard() {
         return board;
     }
 
-    public void newGame(int size, BoardType type) {
-        board = new Board(size, type);
+    public int[] getCenter() {
         int mid = board.getSize() / 2;
-        center = new int[]{mid, mid};
+        return new int[]{mid, mid};
+    }
+
+    public void newGame(int size, BoardType type) {
+        initGame(size, type);
+    }
+    private void initGame(int size, BoardType type) {
+        board = new Board(size, type);
     }
 
     public boolean isValidMove(Move move) {
@@ -95,9 +100,8 @@ public abstract class Game {
     }
 
     public boolean isWin() {
-        int[] center = getCenter();
         return countPegs() == 1 &&
-                board.getCell(center[0], center[1]) == CellState.PEG;
+                board.getCell(getCenter()[0], getCenter()[1]) == CellState.PEG;
     }
 
     public boolean isGameOver() { //For every peg on the board check if there's a valid move
@@ -125,6 +129,18 @@ public abstract class Game {
         }
         return true;
     }
-    public int[] getCenter (){return this.center;}
+    public void randomizeBoard() {
+        Random random = new Random();
+        int size = getBoard().getSize();
+
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                if (getBoard().getCell(row, col) != CellState.INVALID) {
+                    getBoard().setCell(row, col,
+                            random.nextBoolean() ? CellState.PEG : CellState.EMPTY);
+                }
+            }
+        }
+    }
     public abstract void playTurn();
 }

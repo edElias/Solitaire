@@ -68,7 +68,28 @@ public class Board {
     }
 
     private void initializeHexagon() {
-        // done later
+        int mid = size / 2;
+        int sideLength = size / 3; // 7→2, 9→3, 11→4
+
+        for (int r = 0; r < size; r++) {
+            int distFromMid = Math.abs(r - mid);
+
+            // Taper only once we're past the flat middle band
+            int leftOffset = Math.max(0, distFromMid - sideLength + 1);
+
+            int leftCol = leftOffset;
+            int rightCol = size - 1 - leftOffset;
+
+            for (int c = 0; c < size; c++) {
+                if (c >= leftCol && c <= rightCol) {
+                    grid[r][c] = CellState.PEG;
+                } else {
+                    grid[r][c] = CellState.INVALID;
+                }
+            }
+        }
+
+        grid[mid][mid] = CellState.EMPTY;
     }
 
     public boolean isInBounds(int row, int col) {
